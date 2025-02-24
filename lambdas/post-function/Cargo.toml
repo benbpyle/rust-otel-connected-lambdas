@@ -1,0 +1,29 @@
+[package]
+name = "post-function"
+version = "0.1.0"
+authors = ["Benjamen Pyle"]
+edition = "2021"
+
+[dependencies]
+
+tokio = { version = "1", features = ["macros"] }
+serde = { version = "1.0.215", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1.41"
+lambda_http = "0.14.0"
+aws-config = "1.5.13"
+openssl = { version = "0.10.35", features = ["vendored"] }
+
+opentelemetry = "0.27.1"
+opentelemetry-datadog = { version = "0.15.0", features = ["reqwest-client"] }
+opentelemetry_sdk = { version = "0.27.1", features = ["rt-tokio", "trace"] }
+opentelemetry-http = { version = "0.27.0", features = ["reqwest"] }
+opentelemetry-stdout = "0.27.0"
+tracing-opentelemetry = "0.28.0"
+tracing-subscriber = "0.3.19"
+aws-sdk-sqs = "1.59.0"
+reqwest = { version = "0.12", features = ["rustls-tls", "json"] }
+reqwest-middleware = "0.4"
+reqwest-tracing = { version = "0.5", features = ["opentelemetry_0_22"] }
+uuid = { version = "1.13.2", features = ["v4", "fast-rng"] }
+opentelemetry-aws = "0.16.0"
