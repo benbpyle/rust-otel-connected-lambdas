@@ -27,6 +27,10 @@ export class DatadogQueueConnectedStack extends cdk.Stack {
       'arn:aws:lambda:us-east-1:464622532012:layer:Datadog-Extension-ARM:68'
     )
 
+    const queue = new Queue(this, 'PostQueue', {
+      queueName: 'sample-post-queue'
+    });
+
     const postFunction = new RustFunction(this, 'PostFunction', {
       architecture: Architecture.ARM_64,
       functionName: "sample-post-function",
@@ -37,7 +41,9 @@ export class DatadogQueueConnectedStack extends cdk.Stack {
         FUNCTION_NAME: "post-function",
         DD_API_KEY: process.env.DD_API_KEY!,
         DD_SITE: process.env.DD_SITE!,
-        AGENT_ADDRESS: '127.0.0.1'
+        AGENT_ADDRESS: '127.0.0.1',
+        QUEUE_URL: queue.queueUrl,
+        API_URL: api.deploymentStage.urlForPath()
       },
       layers: [layer]
     });
@@ -75,9 +81,6 @@ export class DatadogQueueConnectedStack extends cdk.Stack {
     api.root.addMethod("POST", new LambdaIntegration(postFunction))
     api.root.addMethod("GET", new LambdaIntegration(readFunction))
 
-    const queue = new Queue(this, 'PostQueue', {
-      queueName: 'sample-post-queue'
-    });
 
     queue.grantSendMessages(postFunction);
     queue.grantConsumeMessages(changeFunction);

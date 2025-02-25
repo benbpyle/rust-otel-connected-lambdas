@@ -53,9 +53,20 @@ async fn main() -> Result<(), lambda_http::Error> {
         .build();
     let shared_client = &client;
     let shared_http_client = &http_client;
+    let service_url = env::var("API_URL").expect("API_URL is required");
+    let queue_url = env::var("QUEUE_URL").expect("QUEUE_URL is required");
+    let shared_service_url = service_url.as_str();
+    let shared_queue_url = queue_url.as_str();
 
     run(service_fn(move |event: Request| async move {
-        handler(shared_client, shared_http_client, event).await
+        handler(
+            shared_client,
+            shared_http_client,
+            shared_service_url,
+            shared_queue_url,
+            event,
+        )
+        .await
     }))
     .await
 }
@@ -79,6 +90,8 @@ fn init_datadog_pipeline() -> opentelemetry_sdk::trace::Tracer {
 async fn handler(
     client: &aws_sdk_sqs::Client,
     http_client: &reqwest_middleware::ClientWithMiddleware,
+    service_url: &str,
+    queue_url: &str,
     _request: Request,
 ) -> Result<Response<Body>, lambda_http::Error> {
     let ctx = Span::current().context();
@@ -102,7 +115,7 @@ async fn handler(
         .collect();
 
     let response = http_client
-        .get("https://uxx27dtr2l.execute-api.us-east-1.amazonaws.com/demo")
+        .get(format!("{}/demo", service_url))
         .headers(headers)
         .send()
         .await;
@@ -114,6 +127,7 @@ async fn handler(
                 Ok(b) => {
                     let _ = post_message(
                         client,
+                        queue_url,
                         MessageBody {
                             timestamp: b.timestamp,
                             description: b.description,
@@ -144,6 +158,7 @@ async fn handler(
 #[instrument(name = "Post Message")]
 async fn post_message(
     client: &aws_sdk_sqs::Client,
+    queue_url: &str,
     mut payload: MessageBody,
     trace_parent: Option<String>,
 ) -> Result<(), aws_sdk_sqs::error::SdkError<SendMessageError>> {
@@ -157,7 +172,7 @@ async fn post_message(
     let message = serde_json::to_string(&payload).unwrap();
     client
         .send_message()
-        .queue_url("https://sqs.us-east-1.amazonaws.com/252703795646/sample-post-queue")
+        .queue_url(queue_url)
         .message_body(&message)
         .send()
         .instrument(span)
